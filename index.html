@@ -150,7 +150,8 @@ a.nav__row:hover{color:var(--ink);}
 .road .what::before{content:"";position:absolute;left:-4px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--accent);}
 .road .what:last-child{border-left-color:transparent;}
 .road .what h5{font-family:var(--serif);font-weight:500;font-size:18px;margin:0 0 2px;}
-.road .what p{font-family:var(--grot);font-weight:300;font-size:13px;color:var(--ink-soft);margin:0;max-width:64ch;}
+.road .what p{font-family:var(--grot);font-weight:300;font-size:13px;color:var(--ink-soft);margin:0;max-width:none;white-space:nowrap;}
+@media(max-width:760px){.road .what p{white-space:normal;}}
 
 /* ============================ FOOTER ============================ */
 .foot{position:relative;padding:clamp(110px,16vh,180px) var(--pad) 60px;max-width:var(--maxw);margin:0 auto;overflow:hidden;}
@@ -161,7 +162,7 @@ a.nav__row:hover{color:var(--ink);}
 .foot__links a:hover{color:var(--ink);border-color:var(--ink);}
 .foot__meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.04em;text-align:right;}
 
-@media(max-width:860px){.nav__index{display:none;}.field{display:none;}.proj-head{grid-template-columns:1fr;}.proj-head .meta{text-align:left;}}
+@media(max-width:860px){.nav__index{display:none;}.field{display:none;}.hero__net{display:none;}.proj-head{grid-template-columns:1fr;}.proj-head .meta{text-align:left;}}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none;}*{scroll-behavior:auto;}}
 
 /* --- nav veil (keeps top bar readable over scrolling headers) --- */
@@ -172,6 +173,17 @@ a.nav__row:hover{color:var(--ink);}
 /* --- draggable discipline nodes --- */
 .field{cursor:grab;touch-action:none;}
 .field:active{cursor:grabbing;}
+/* --- hero connective net (nodes + strings), focus-lensed like the header --- */
+.hero__net{position:absolute;inset:0;z-index:1;pointer-events:none;}
+.hero__net .net{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+.hero__net line{stroke:var(--ink-soft);stroke-width:1;stroke-linecap:round;}
+.net--ghost{filter:blur(6px);opacity:.2;transition:filter .5s ease,opacity .5s ease;}
+.hero.net-active .net--ghost{filter:blur(3px);opacity:.24;}
+.net--sharp{opacity:.6;
+  -webkit-mask-image:radial-gradient(circle 190px at var(--mx,-400px) var(--my,-400px),#000 0%,#000 15%,rgba(0,0,0,0) 72%);
+          mask-image:radial-gradient(circle 190px at var(--mx,-400px) var(--my,-400px),#000 0%,#000 15%,rgba(0,0,0,0) 72%);}
+.hero__word,.hero__tag,.hero__sub{position:relative;}
+.hero__word,.hero__tag,.hero__sub,.hero__scroll,.field{z-index:2;}
 /* --- footer click safety --- */
 .foot__name{pointer-events:none;}
 .foot__row{position:relative;z-index:2;}
@@ -205,6 +217,10 @@ a.nav__row:hover{color:var(--ink);}
 
 <!-- ============================ HERO ============================ -->
 <header class="hero" id="top">
+  <div class="hero__net" aria-hidden="true">
+    <svg class="net net--ghost"><g id="netGhost"></g></svg>
+    <svg class="net net--sharp"><g id="netSharp"></g></svg>
+  </div>
   <div class="hero__word">
     <span class="hero__name hero__name--blur" aria-hidden="true">EnHouse</span>
     <h1 class="hero__name hero__name--sharp" id="sharpName">EnHouse</h1>
@@ -356,12 +372,65 @@ a.nav__row:hover{color:var(--ink);}
   els.forEach(e=>io.observe(e));
 })();
 
-/* ---------- draggable discipline nodes ---------- */
+/* ---------- hero: connective net + draggable nodes + focus lens ---------- */
 (function(){
-  const hero=document.querySelector('.hero'); if(!hero) return;
-  hero.querySelectorAll('.field').forEach(el=>{
+  const hero=document.querySelector('.hero');
+  const gGhost=document.getElementById('netGhost');
+  const gSharp=document.getElementById('netSharp');
+  const sharp=document.querySelector('.net--sharp');
+  if(!hero||!gGhost||!gSharp) return;
+  const NS='http://www.w3.org/2000/svg';
+  const fields=Array.from(hero.querySelectorAll('.field'));
+  const isMobile=()=>window.matchMedia('(max-width:860px)').matches;
+  let edges=[], gl=[], sl=[];
+
+  function centers(){
+    const hr=hero.getBoundingClientRect();
+    return fields.map(el=>{
+      const r=el.getBoundingClientRect();
+      return {x:r.left-hr.left+3, y:r.top-hr.top+r.height/2};   // anchor at the dot
+    });
+  }
+  // explicit adjacency — indices follow .field DOM order:
+  // 0 social media · 1 bme · 2 ai · 3 computer science · 4 art · 5 singing · 6 sports
+  const EDGES=[[0,1],[0,3],[0,4],[1,6],[4,5],[3,4],[2,3],[1,2],[1,3]];
+  function position(){
+    if(!edges.length) return;
+    const pts=centers();
+    for(let k=0;k<edges.length;k++){
+      const p=pts[edges[k][0]], q=pts[edges[k][1]];
+      [gl[k],sl[k]].forEach(L=>{L.setAttribute('x1',p.x);L.setAttribute('y1',p.y);L.setAttribute('x2',q.x);L.setAttribute('y2',q.y);});
+    }
+  }
+  function build(){
+    gGhost.textContent=''; gSharp.textContent=''; gl=[]; sl=[]; edges=[];
+    if(isMobile()) return;                         // no strings on phones
+    edges=EDGES.map(e=>e.slice());
+    edges.forEach(()=>{
+      const a=document.createElementNS(NS,'line'), b=document.createElementNS(NS,'line');
+      gGhost.appendChild(a); gSharp.appendChild(b); gl.push(a); sl.push(b);
+    });
+    position();
+  }
+
+  // focus lens on the strings — same radius as the header, driven by the cursor
+  hero.addEventListener('pointermove',e=>{
+    if(isMobile()) return;
+    hero.classList.add('net-active');
+    const hr=hero.getBoundingClientRect();
+    sharp.style.setProperty('--mx',(e.clientX-hr.left)+'px');
+    sharp.style.setProperty('--my',(e.clientY-hr.top)+'px');
+  });
+  hero.addEventListener('pointerleave',()=>{
+    hero.classList.remove('net-active');
+    sharp.style.setProperty('--mx','-400px'); sharp.style.setProperty('--my','-400px');
+  });
+
+  // drag the nodes (desktop only); strings follow live
+  fields.forEach(el=>{
     let sx,sy,ox,oy,dragging=false,moved=false;
     el.addEventListener('pointerdown',e=>{
+      if(isMobile()) return;
       dragging=true;moved=false;
       const hr=hero.getBoundingClientRect(), r=el.getBoundingClientRect();
       ox=r.left-hr.left; oy=r.top-hr.top;
@@ -374,11 +443,17 @@ a.nav__row:hover{color:var(--ink);}
       const dx=e.clientX-sx, dy=e.clientY-sy;
       if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
       el.style.left=(ox+dx)+'px'; el.style.top=(oy+dy)+'px';
+      position();
     });
     el.addEventListener('pointerup',()=>{dragging=false;});
     el.addEventListener('click',e=>{ if(moved) e.preventDefault(); });
     el.addEventListener('dragstart',e=>e.preventDefault());
   });
+
+  let rt; addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(build,150);});
+  addEventListener('load',build);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(build);}
+  build();
 })();
 </script>
 </body>
