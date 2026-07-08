@@ -173,8 +173,14 @@ a.nav__row:hover{color:var(--ink);}
 /* --- draggable discipline nodes --- */
 .field{cursor:grab;touch-action:none;}
 .field:active{cursor:grabbing;}
+.field::after{content:"";position:absolute;inset:-9px -20px;z-index:-1;pointer-events:none;
+  -webkit-backdrop-filter:blur(2.4px);backdrop-filter:blur(2.4px);
+  -webkit-mask-image:radial-gradient(ellipse 100% 100% at 50% 50%,#000 0%,#000 12%,rgba(0,0,0,0) 96%);
+          mask-image:radial-gradient(ellipse 100% 100% at 50% 50%,#000 0%,#000 12%,rgba(0,0,0,0) 96%);}
 /* --- hero connective net (nodes + strings), focus-lensed like the header --- */
-.hero__net{position:absolute;inset:0;z-index:1;pointer-events:none;}
+.hero__net{position:absolute;inset:0;z-index:1;pointer-events:none;
+  -webkit-mask-image:radial-gradient(ellipse 44% 26% at 50% 42%,rgba(0,0,0,.08) 0%,rgba(0,0,0,.08) 40%,#000 96%);
+          mask-image:radial-gradient(ellipse 44% 26% at 50% 42%,rgba(0,0,0,.08) 0%,rgba(0,0,0,.08) 40%,#000 96%);}
 .hero__net .net{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
 .hero__net line{stroke:var(--ink-soft);stroke-width:1;stroke-linecap:round;}
 .net--ghost{filter:blur(6px);opacity:.2;transition:filter .5s ease,opacity .5s ease;}
